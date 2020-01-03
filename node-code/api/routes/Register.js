@@ -66,7 +66,9 @@ router.post('/', async(req,res) => {
                 const values1 = [firstname,lastname,email,phonenumber,password]
                 pool.query(newUser,values1)
                     .then(response => {
-                        return res.status(200).json(response.rows[0])
+                        const payload = response.rows[0]
+                        const token = jwt.sign({payload}, config.get("jwtKey"))
+                        return res.header('x-auth-token', token).status(200).json(response.rows[0])
                     })
                     .catch(reason => {
                         failed(chalk.red.bold(reason))
