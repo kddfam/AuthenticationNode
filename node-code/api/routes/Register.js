@@ -20,67 +20,109 @@ router.post('/', async(req,res) => {
         password : config.get("pg_password"),
         database : config.get("pg_database")
     });
+
+    // connecting to postgres
     pool.connect()
         .then(success(chalk.cyanBright.bold('Connected for Register route.')))
         .catch(err => failed(chalk.redBright.bold(err)));
 
+    // validating user input
     const {validation_error} = validateInputs(req.body);
     if(validation_error) {
+
+        // logging into log file
         error.log({
             level : 'error',
             message : error.details[0].message,
             time : mongoose.Types.ObjectId().getTimestamp()
         });
+
+        // display error on console
         failed(chalk.red.bold(error.details[0].message)+chalk.blue.bold(mongoose.Types.ObjectId().getTimestamp()));
+
+        // return error response to user
         return res.status(500).json({
             isSuccessful : false,
             message : error.details[0].message
         });
     }
 
+    // getting values from request body
     const firstname = req.body.firstname;
     const lastname = req.body.lastname;
     const email = req.body.email;
     const phonenumber = req.body.phonenumber;
     const password = req.body.password;
 
-    const checkEmail = `SELECT * FROM users WHERE email = $1`
-    const values = [email]
-    pool.query(checkEmail,values)
+    // database query
+    const checkEmailQuery = `SELECT * FROM users WHERE email = $1`
+    const emailValue = [email]
+
+    // firing database query
+    pool.query(checkEmailQuery,emailValue)
         .then(result => {
+            // checking whether email already exists or not
+            // if email already exists
             if(result.rowCount != 0) {
+
+                // display error message on console
                 failed(chalk.red.bold(`${email} Already Exists`))
+
+                // return error response to the user
                 return res.status(400).json({
                     isSuccessful : false,
                     message : `${email} Already Exists`
                 })
             }
+
+            // if not
             else {
-                const newUser =  `INSERT INTO 
+
+                // database query
+                const newUserQuery =  `INSERT INTO 
                                   users
                                   (firstname,lastname,email,phonenumber,password) 
                                   VALUES
                                   ($1,$2,$3,$4,$5)
                                   RETURNING
                                   id,firstname,lastname,email,phonenumber,password`
-                const values1 = [firstname,lastname,email,phonenumber,password]
-                pool.query(newUser,values1)
+                const newUserValues = [firstname,lastname,email,phonenumber,password]
+
+                // firing query
+                pool.query(newUserQuery,newUserValues)
                     .then(response => {
+
+                        // generating token
                         const payload = response.rows[0]
                         const token = jwt.sign({payload}, config.get("jwtKey"))
+
+                        // returning reponse to the user request
                         return res.header('x-auth-token', token).status(200).json(response.rows[0])
                     })
-                    .catch(reason => {
-                        failed(chalk.red.bold(reason))
-                        return res.status(400).json(reason)
+                    .catch(err => {
+
+                        // display error message on console
+                        failed(chalk.red.bold(err))
+
+                        // return response to user request
+                        return res.status(400).json(err)
                     })
             }
         })
-        .catch(err => {
-            failed(chalk.red.bold(err))
+        .catch(error => {
+
+            // display error on console
+            failed(chalk.red.bold(error))
+
+            // return response to user
+            return res.status(400).json({
+                isSuccessful : false,
+                message : error
+            })
         });
 })
 
+// function for validating user inputs
 function validateInputs(data) {
     const schema = joi.object({
         firstname : joi.string().required(),
