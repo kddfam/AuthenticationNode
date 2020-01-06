@@ -3,6 +3,7 @@ const success = require('debug')('success');
 const failed = require('debug')('failed');
 const chalk = require('chalk');
 
+// function for mongodb connection
 module.exports = function () {
     mongoose.connect('mongodb://localhost/authentication',
         {
