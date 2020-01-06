@@ -5,6 +5,7 @@ const ForgotPassword = require('../routes/ForgotPassword.js');
 const VerifyOTP = require('../routes/VerifyOTP.js');
 const NewPassword = require('../routes/NewPassword.js');
 
+// function for defining various routes
 module.exports = function (app) {
     app.use(express.json());
     app.use(express.urlencoded({extended : true}));
