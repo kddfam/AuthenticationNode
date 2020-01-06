@@ -1,5 +1,6 @@
 {
     "pg_user" : "",
     "pg_password" : "",
-    "pg_datebase" : ""
+    "pg_datebase" : "",
+    "jwtKey" : ""
 }
